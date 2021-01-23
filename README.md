@@ -1,5 +1,5 @@
 # pio_avrda
-Script to import avrda definition files to PlatformIO
+Script to import AVR DA definition files to PlatformIO
 
 # Prerequisites
 - Windows 10 (untested on other versions).
