@@ -1,0 +1,16 @@
+{
+    "build": {
+      "extra_flags": "",
+      "f_cpu": "24000000UL",
+      "mcu": "avr128da48"
+    },
+    "frameworks": [],
+    "platforms": ["atmelavr"],
+    "name": "avr128da48",
+    "upload": {
+      "maximum_ram_size": 16384,
+      "maximum_size": 131072
+    },
+    "url": "https://www.microchip.com/wwwproducts/en/avr128da48",
+    "vendor": "Microchip"
+  }
