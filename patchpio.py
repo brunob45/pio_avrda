@@ -70,7 +70,7 @@ for f in find_file(AvrDaToolkitPath, r"\\(gcc|include)\\.*(\\specs-.*|\d+\.[aoh]
         # create board definition file
         boardinfo = re.match(r"^io(avr(\d+)d(\w)(\d+))$", f.stem)
         boardtemplate["build"]["mcu"] = boardinfo.group(1)
-        boardtemplate["name"] = boardinfo.group(1)
+        boardtemplate["name"] = boardinfo.group(1).upper()
         boardtemplate["upload"]["maximum_ram_size"] = int(
             boardinfo.group(2)) * 128
         boardtemplate["upload"]["maximum_size"] = int(
