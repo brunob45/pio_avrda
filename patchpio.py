@@ -76,7 +76,7 @@ for f in find_file(AvrDaToolkitPath, filefilter):
     copyfile(f, mynewdir / f.name)
 
     # remove administrator rights from file
-    (mynewdir / f.name).chmod(644)
+    os.chmod(mynewdir / f.name, 420) # 644 in octal
 
     if isHeader:
         # create board definition file
