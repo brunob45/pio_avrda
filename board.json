@@ -1,7 +1,7 @@
 {
     "build": {
       "extra_flags": "",
-      "f_cpu": "24000000UL",
+      "f_cpu": "4000000UL",
       "mcu": "avr128da48"
     },
     "frameworks": [],
