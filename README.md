@@ -1,17 +1,15 @@
 # pio_avrda
-Script to import AVR DA definition files to PlatformIO
+Script to import AVR DA definition files to PlatformIO.
 
 # Prerequisites
-- Windows 10 (untested on other versions).
 - Python3, Platformio and Platformio's atmelavr platform.
-- Atmel Studio 7.0 and AVR-Dx_DFP package (from Atmel Studio: Tools -> Device Pack Manager).
 
 # How it works
 Run `patchpio.py`. This file will:
-- attempt to find your platformio and atmel studio installation paths,
-- find all files related to AVR-DA compilation,
-- copy them in the platformio installation directory
-- generator automagically all the board definition files
+- attempt to find your platformio installation path,
+- download the AVR-Dx pack from atmel's website,
+- copy the relevant files in the platformio installation path,
+- generator automagically all the board definition files,
 - all the boards should now be available in platformio
 
 

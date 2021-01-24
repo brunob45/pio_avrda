@@ -3,15 +3,27 @@
 import os
 import re
 import json
+import sys
 
 from shutil import copyfile
 from pathlib import Path
+from urllib import request
+from zipfile import ZipFile
+from bs4 import BeautifulSoup
+from platformio.__main__ import main as pio
+
+# update pio atmelavr platform
+if pio(["platformio", "platform", "update", "atmelavr"]) != 0:
+    pio(["platformio", "platform", "install", "atmelavr"])
 
 # load template for board definition
 boardtemplate = json.load(open("board.json"))
 
 # find platformio installation path
-PlatformioPath = Path(os.environ["USERPROFILE"]) / ".platformio"
+if "USERPROFILE" in os.environ: #windows
+    PlatformioPath = Path(os.environ["USERPROFILE"]) / ".platformio"
+elif "HOME" in os.environ: #linux
+    PlatformioPath = Path(os.environ["HOME"]) / ".platformio"
 ToolchainPath = PlatformioPath / "packages/toolchain-atmelavr"
 
 if not ToolchainPath.exists():
@@ -20,17 +32,16 @@ if not ToolchainPath.exists():
 else:
     print("Found Platformio at", ToolchainPath)
 
-# find Atmel Studio installation path
-AvrDaToolkitPath = Path(
-    os.environ["PROGRAMFILES(X86)"]) / "Atmel/Studio/7.0/packs/atmel/AVR-Dx_DFP"
-AvrDaToolkitPath /= os.listdir(AvrDaToolkitPath)[-1]
+AvrDaToolkitPack = Path("AVR-Dx_DFP.atpack")
+AvrDaToolkitPath = Path("AVR-Dx_DFP")
+
+if not AvrDaToolkitPack.exists():
+    soup = BeautifulSoup(request.urlopen("http://packs.download.atmel.com/").read().decode("utf8"), "html.parser")
+    link = next(button.get("data-link") for button in soup.find_all("button") if button.get("data-link") and "AVR-Dx" in button.get("data-link"))
+    request.urlretrieve("http://packs.download.atmel.com/"+link, AvrDaToolkitPack)
 
 if not AvrDaToolkitPath.exists():
-    print("Cannot find Atmel Studio 7.0 at", AvrDaToolkitPath)
-    exit(2)
-else:
-    print("Found Atmel Studio 7.0 at", AvrDaToolkitPath)
-
+    ZipFile("AVR-Dx_DFP.atpack", "r").extractall(AvrDaToolkitPath)
 
 def find_file(dir: Path, match):
     # function to find all files in a directory tree
@@ -43,10 +54,11 @@ def find_file(dir: Path, match):
             result += find_file(fullpath, match)
     return result
 
+filefilter = str(Path(r"AVR-Dx_DFP/(gcc|include)/.*(/specs-.*|\d+\.[aoh]$)"))
 
 # find all header, linker and specs files needed for compilation
-for f in find_file(AvrDaToolkitPath, r"\\(gcc|include)\\.*(\\specs-.*|\d+\.[aoh]$)"):
-
+for f in find_file(AvrDaToolkitPath, filefilter):
+    print(f)
     isHeader = False
     if re.search(r".*\.h$", str(f)):  # is header file
         mynewdir = ToolchainPath / "avr/include/avr"
