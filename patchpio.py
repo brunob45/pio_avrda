@@ -10,38 +10,14 @@ from pathlib import Path
 from urllib import request
 from zipfile import ZipFile
 from bs4 import BeautifulSoup
-from platformio.__main__ import main as pio
 
-# update pio atmelavr platform
-if pio(["platformio", "platform", "update", "atmelavr"]) != 0:
-    pio(["platformio", "platform", "install", "atmelavr"])
+isverbose = "-v" in sys.argv or "--verbose" in sys.argv
 
-# load template for board definition
-boardtemplate = json.load(open("board.json"))
 
-# find platformio installation path
-if "USERPROFILE" in os.environ: #windows
-    PlatformioPath = Path(os.environ["USERPROFILE"]) / ".platformio"
-elif "HOME" in os.environ: #linux
-    PlatformioPath = Path(os.environ["HOME"]) / ".platformio"
-ToolchainPath = PlatformioPath / "packages/toolchain-atmelavr"
+def print_verbose(*args):
+    if isverbose:
+        print(" ".join(map(str, args)))
 
-if not ToolchainPath.exists():
-    print("Cannot find Platformio at", ToolchainPath)
-    exit(1)
-else:
-    print("Found Platformio at", ToolchainPath)
-
-AvrDaToolkitPack = Path("AVR-Dx_DFP.atpack")
-AvrDaToolkitPath = Path("AVR-Dx_DFP")
-
-if not AvrDaToolkitPack.exists():
-    soup = BeautifulSoup(request.urlopen("http://packs.download.atmel.com/").read().decode("utf8"), "html.parser")
-    link = next(button.get("data-link") for button in soup.find_all("button") if button.get("data-link") and "AVR-Dx" in button.get("data-link"))
-    request.urlretrieve("http://packs.download.atmel.com/"+link, AvrDaToolkitPack)
-
-if not AvrDaToolkitPath.exists():
-    ZipFile("AVR-Dx_DFP.atpack", "r").extractall(AvrDaToolkitPath)
 
 def find_file(dir: Path, match):
     # function to find all files in a directory tree
@@ -54,35 +30,86 @@ def find_file(dir: Path, match):
             result += find_file(fullpath, match)
     return result
 
-filefilter = r"AVR-Dx_DFP/(gcc|include)/.*(/specs-.*|\d+\.[aoh]$)"
-if os.sep == "\\":
-    filefilter = filefilter.replace("/", "\\\\")
+
+# load template for board definition
+boardtemplate = json.load(open("board.json"))
+
+# find platformio installation path
+if "USERPROFILE" in os.environ:  # windows
+    PlatformioPath = Path(os.environ["USERPROFILE"]) / ".platformio"
+elif "HOME" in os.environ:  # linux
+    PlatformioPath = Path(os.environ["HOME"]) / ".platformio"
+else:
+    PlatformioPath = Path(os.curdir)
+
+if not PlatformioPath.exists():
+    print("Cannot find Platformio at", PlatformioPath)
+    exit(1)
+else:
+    print("Found Platformio at", PlatformioPath)
+
+# find atmelavr toolchain
+ToolchainPath = PlatformioPath / "packages/toolchain-atmelavr"
+if not ToolchainPath.exists():
+    print("Cannot find atmelavr toolchain at", ToolchainPath)
+    exit(2)
+else:
+    print("Found toolchain at", ToolchainPath)
+
+# get pack list from atmel's website
+print("Retrieving packs informaton...")
+downloadlink = "http://packs.download.atmel.com/"
+htmltext = request.urlopen(downloadlink).read().decode("utf-8")
+soup = BeautifulSoup(htmltext, "html.parser")
+# find latest pack version
+link = next(button.get("data-link") for button in soup.find_all("button")
+            if button.get("data-link") and "AVR-Dx" in button.get("data-link"))
+
+AvrDaToolkitPack = Path(link)
+if not AvrDaToolkitPack.exists():
+    print("Downloading", AvrDaToolkitPack)
+    downloadlink += AvrDaToolkitPack
+    request.urlretrieve(downloadlink, AvrDaToolkitPack)
+else:
+    print("Using local", AvrDaToolkitPack)
+
+AvrDaToolkitPack = Path(link)
+AvrDaToolkitPath = Path(AvrDaToolkitPack.stem)
+
+if not AvrDaToolkitPath.exists():
+    print("Extracting ", AvrDaToolkitPack, "into", AvrDaToolkitPath)
+    ZipFile(AvrDaToolkitPack, "r").extractall(AvrDaToolkitPath)
+
+print_verbose("Copying files...")
+
+filefilter = str(AvrDaToolkitPath) + \
+    r"/(gcc|include)/.*(/specs-.*|\d+\.[aoh]$)"
+
+if not (PlatformioPath / "boards").exists():
+    (PlatformioPath / "boards").mkdir()
 
 # find all header, linker and specs files needed for compilation
 for f in find_file(AvrDaToolkitPath, filefilter):
-    print(f)
-    isHeader = False
     if re.search(r".*\.h$", str(f)):  # is header file
         mynewdir = ToolchainPath / "avr/include/avr"
-        isHeader = True
     elif re.search(r".*\.[ao]$", str(f)):  # is linker file
         mynewdir = ToolchainPath / "avr/lib" / str(f).split(os.sep)[-2]
     else:  # is specs file
-        mynewdir = ToolchainPath / "lib/gcc/avr/5.4.0/device-specs"
-
-    # create new directory
-    if not mynewdir.exists():
-        mynewdir.mkdir()
+        mynewdir = ToolchainPath / "lib/gcc/avr/"
+        mynewdir /= os.listdir(mynewdir)[0]
+        mynewdir /= "device-specs"
 
     # copy file
     copyfile(f, mynewdir / f.name)
 
     # remove administrator rights from file
-    os.chmod(mynewdir / f.name, 420) # 644 in octal
+    os.chmod(mynewdir / f.name, 420)  # 644 in octal
 
-    if isHeader:
+    print_verbose(f, "->", mynewdir)
+
+    boardinfo = re.match(r"^io(avr(\d+)d(\w)(\d+))$", f.stem)
+    if boardinfo is not None:
         # create board definition file
-        boardinfo = re.match(r"^io(avr(\d+)d(\w)(\d+))$", f.stem)
         boardtemplate["build"]["mcu"] = boardinfo.group(1)
         boardtemplate["name"] = boardinfo.group(1).upper()
         boardtemplate["upload"]["maximum_ram_size"] = int(
@@ -95,5 +122,9 @@ for f in find_file(AvrDaToolkitPath, filefilter):
         if not (PlatformioPath / "boards").exists():
             (PlatformioPath / "boards").mkdir()
 
-        json.dump(boardtemplate, open(PlatformioPath / "boards" /
-                                      (boardinfo.group(1)+".json"), "w+"), indent=4)
+        newboardfile = PlatformioPath / "boards" / (boardinfo.group(1)+".json")
+        json.dump(boardtemplate, open(newboardfile, "w+"), indent=4)
+
+        print_verbose("Board definition file created ->", newboardfile)
+
+print("Success!")
