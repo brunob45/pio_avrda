@@ -9,7 +9,9 @@
     "name": "avr128da48",
     "upload": {
       "maximum_ram_size": 16384,
-      "maximum_size": 131072
+      "maximum_size": 131072,
+      "protocol": "custom",
+      "command": "pymcuprog write -d $BOARD -f $SOURCE"
     },
     "url": "https://www.microchip.com/wwwproducts/en/avr128da48",
     "vendor": "Microchip"
