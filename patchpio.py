@@ -54,7 +54,9 @@ def find_file(dir: Path, match):
             result += find_file(fullpath, match)
     return result
 
-filefilter = str(Path(r"AVR-Dx_DFP/(gcc|include)/.*(/specs-.*|\d+\.[aoh]$)"))
+filefilter = r"AVR-Dx_DFP/(gcc|include)/.*(/specs-.*|\d+\.[aoh]$)"
+if os.sep == "\\":
+    filefilter = filefilter.replace("/", "\\\\")
 
 # find all header, linker and specs files needed for compilation
 for f in find_file(AvrDaToolkitPath, filefilter):
