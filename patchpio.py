@@ -8,8 +8,8 @@ import sys
 from shutil import copyfile
 from pathlib import Path
 from urllib import request
+import xml.etree.ElementTree as ET
 from zipfile import ZipFile
-from bs4 import BeautifulSoup
 
 isverbose = "-v" in sys.argv or "--verbose" in sys.argv
 
@@ -57,19 +57,26 @@ else:
     print("Found toolchain at", ToolchainPath)
 
 # get pack list from atmel's website
-print("Retrieving packs informaton...")
-downloadlink = "http://packs.download.atmel.com/"
-htmltext = request.urlopen(downloadlink).read().decode("utf-8")
-soup = BeautifulSoup(htmltext, "html.parser")
-# find latest pack version
-link = next(button.get("data-link") for button in soup.find_all("button")
-            if button.get("data-link") and "AVR-Dx" in button.get("data-link"))
+print("Retrieving packs information...")
+repo = 'http://packs.download.atmel.com/'
+index_url = repo + 'index.idx'
+with  request.urlopen(index_url) as response:
+    index = response.read()
+index_root = ET.fromstring(index)
+
+
+ns = { 'atmel': 'http://packs.download.atmel.com/pack-idx-atmel-extension' }
+avrdx = index_root.find('./pdsc[@atmel:name = "AVR-Dx_DFP"]', ns)
+version = avrdx.get('version')
+url = avrdx.get('url')
+devices = [device.get('name') for device in avrdx.findall('./atmel:releases/atmel:release[1]/atmel:devices/atmel:device', ns)]
+
+link = 'Atmel.AVR-Dx_DFP.' + version + '.atpack'
 
 AvrDaToolkitPack = Path(link)
 if not AvrDaToolkitPack.exists():
-    print("Downloading", AvrDaToolkitPack)
-    downloadlink += str(AvrDaToolkitPack)
-    request.urlretrieve(downloadlink, AvrDaToolkitPack)
+    print("Downloading", AvrDaToolkitPack, repo + link)
+    request.urlretrieve(repo + link, AvrDaToolkitPack)
 else:
     print("Using local", AvrDaToolkitPack)
 
