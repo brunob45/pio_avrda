@@ -85,8 +85,10 @@ print_verbose("Copying files...")
 filefilter = str(AvrDaToolkitPath) + \
     r"/(gcc|include)/.*(/specs-.*|\d+\.[aoh]$)"
 
-if not (PlatformioPath / "boards").exists():
-    (PlatformioPath / "boards").mkdir()
+boardpath = Path("boards") #(PlatformioPath / "boards")
+
+if not boardpath.exists():
+    boardpath.mkdir()
 
 # find all header, linker and specs files needed for compilation
 for f in find_file(AvrDaToolkitPath, filefilter):
@@ -107,24 +109,23 @@ for f in find_file(AvrDaToolkitPath, filefilter):
 
     print_verbose(f, "->", mynewdir)
 
-    boardinfo = re.match(r"^io(avr(\d+)d(\w)(\d+))$", f.stem)
-    if boardinfo is not None:
-        # create board definition file
-        boardtemplate["build"]["mcu"] = boardinfo.group(1)
-        boardtemplate["name"] = boardinfo.group(1).upper()
-        boardtemplate["upload"]["maximum_ram_size"] = int(
-            boardinfo.group(2)) * 128
-        boardtemplate["upload"]["maximum_size"] = int(
-            boardinfo.group(2)) * 1024
-        boardtemplate["url"] = re.sub(
-            r"/avr\d+d[ab]\d+$", "/"+boardinfo.group(1), boardtemplate["url"])
+#    boardinfo = re.match(r"^io(avr(\d+)d(\w)(\d+))$", f.stem)
+#    if boardinfo is not None:
+#        # create board definition file
+#        boardtemplate["build"]["mcu"] = boardinfo.group(1)
+#        boardtemplate["build"]["variant"] = str(boardinfo.group(4)) + "pin-standard"
+#        boardtemplate["build"]["extra_flags"] = "-DARDUINO_AVR_" + boardinfo.group(1).upper() + " -DARDUINO_avrd"+boardinfo.group(3)+" -DMILLIS_USE_TIMERB0"
+#        boardtemplate["name"] = boardinfo.group(1).upper()
+#        boardtemplate["upload"]["maximum_ram_size"] = int(
+#            boardinfo.group(2)) * 128
+#        boardtemplate["upload"]["maximum_size"] = int(
+#            boardinfo.group(2)) * 1024
+#        boardtemplate["url"] = re.sub(
+#            r"/AVR\d+D[AB]\d+$", "/"+boardinfo.group(1).upper(), boardtemplate["url"])
 
-        if not (PlatformioPath / "boards").exists():
-            (PlatformioPath / "boards").mkdir()
+#        newboardfile = boardpath / (boardinfo.group(1).upper()+".json")
+#        json.dump(boardtemplate, open(newboardfile, "w+"), indent=4)
 
-        newboardfile = PlatformioPath / "boards" / (boardinfo.group(1)+".json")
-        json.dump(boardtemplate, open(newboardfile, "w+"), indent=4)
-
-        print_verbose("Board definition file created ->", newboardfile)
+#        print_verbose("Board definition file created ->", newboardfile)
 
 print("Success!")
