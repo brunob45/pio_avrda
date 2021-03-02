@@ -68,7 +68,7 @@ link = next(button.get("data-link") for button in soup.find_all("button")
 AvrDaToolkitPack = Path(link)
 if not AvrDaToolkitPack.exists():
     print("Downloading", AvrDaToolkitPack)
-    downloadlink += AvrDaToolkitPack
+    downloadlink += str(AvrDaToolkitPack)
     request.urlretrieve(downloadlink, AvrDaToolkitPack)
 else:
     print("Using local", AvrDaToolkitPack)
