@@ -1,18 +1,25 @@
 {
-    "build": {
-      "extra_flags": "",
-      "f_cpu": "4000000UL",
-      "mcu": "avr128da48"
-    },
-    "frameworks": [],
-    "platforms": ["atmelmegaavr"],
-    "name": "avr128da48",
-    "upload": {
-      "maximum_ram_size": 16384,
-      "maximum_size": 131072,
-      "protocol": "custom",
-      "command": "pymcuprog erase && pymcuprog write -f $SOURCE"
-    },
-    "url": "https://www.microchip.com/wwwproducts/en/avr128da48",
-    "vendor": "Microchip"
-  }
+  "build": {
+    "core": "dxcore",
+    "extra_flags": "",
+    "f_cpu": "24000000L",
+    "mcu": "avr128da48",
+    "variant": "28pin-standard",
+    "millistimer": "B2"
+  },
+  "hardware": {
+    "oscillator": "internal"
+  },
+  "frameworks": [
+    "arduino"
+  ],
+  "name": "avr128da48",
+  "upload": {
+    "maximum_ram_size": 16384,
+    "maximum_size": 131072,
+    "protocol": "jtag2updi",
+    "speed": 115200
+  },
+  "url": "https://www.microchip.com/wwwproducts/en/avr128da48",
+  "vendor": "Microchip"
+}

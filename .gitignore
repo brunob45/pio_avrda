@@ -1,4 +1,5 @@
 Atmel.AVR-Dx_DFP.*/
+Atmel.AVR-Ex_DFP.*/
 *.atpack
 debug.log
 .vscode
