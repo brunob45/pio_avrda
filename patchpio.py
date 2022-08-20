@@ -125,13 +125,16 @@ for series in ['D', 'E']:
             # create board definition file
             newboard = deepcopy(boardtemplate)
             newboard["build"]["mcu"] = boardinfo.group(1)
-            flags = "-DARDUINO_AVR_" + \
+
+            newboard["build"]["extra_flags"] = "-DARDUINO_AVR_" + \
                 boardinfo.group(1).upper()+" -DARDUINO_avr"+boardinfo.group(3)
+
             if boardinfo.group(3) == 'dd' and int(boardinfo.group(4)) <= 20:
-                flags += ' -DMILLIS_USE_TIMERB1'
+                newboard["build"]["millistimer"] = 'B1'
             else:
-                flags += ' -DMILLIS_USE_TIMERB2'
-            newboard["build"]["extra_flags"] = flags
+                newboard["build"]["millistimer"] = 'B2'
+
+
             newboard["build"]["variant"] = boardinfo.group(4)+"pin-standard"
             newboard["name"] = boardinfo.group(1).upper()
             newboard["upload"]["maximum_ram_size"] = int(
