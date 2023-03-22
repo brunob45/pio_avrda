@@ -134,9 +134,9 @@ for series in ['D', 'E']:
                 " -DARDUINO_avr"+boardinfo.group(3)
 
             if boardinfo.group(3) == 'dd' and board_pincount <= 20:
-                newboard["build"]["millistimer"] = 'B1'
+                newboard["hardware"]["millistimer"] = 'B1'
             else:
-                newboard["build"]["millistimer"] = 'B2'
+                newboard["hardware"]["millistimer"] = 'B2'
 
             newboard["build"]["variant"] = str(board_pincount)+"pin-standard"
             newboard["name"] = boardinfo.group(1).upper()
