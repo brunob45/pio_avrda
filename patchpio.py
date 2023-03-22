@@ -127,7 +127,7 @@ for series in ['D', 'E']:
             newboard["build"]["mcu"] = boardinfo.group(1)
             board_ramsize = int(boardinfo.group(2))
             board_pincount = int(boardinfo.group(4))
-            btld_pincount = max(board_pincount, 32)
+            btld_ramsize = max(board_ramsize, 32)
 
             newboard["build"]["extra_flags"] = \
                 "-DARDUINO_AVR_" + boardinfo.group(1).upper() + \
@@ -147,11 +147,11 @@ for series in ['D', 'E']:
 
             if boardinfo.group(3) == 'dd':
                 if board_pincount == 14:
-                    newboard["bootloader"]["class"] = f"optiboot_{btld_pincount}dd14"
+                    newboard["bootloader"]["class"] = f"optiboot_{btld_ramsize}dd14"
                 else:
-                    newboard["bootloader"]["class"] = f"optiboot_{btld_pincount}dd"
+                    newboard["bootloader"]["class"] = f"optiboot_{btld_ramsize}dd"
             else:
-                newboard["bootloader"]["class"] = f"optiboot_{btld_pincount}dx"
+                newboard["bootloader"]["class"] = f"optiboot_{btld_ramsize}dx"
 
             if not (PlatformioPath / "boards").exists():
                 (PlatformioPath / "boards").mkdir()
