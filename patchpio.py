@@ -135,10 +135,11 @@ for series in ['D', 'E']:
 
             if boardinfo.group(3) == 'dd' and board_pincount <= 20:
                 newboard["hardware"]["millistimer"] = 'B1'
+            if boardinfo.group(3) == 'dd':
+                newboard["build"]["variant"] = str(board_pincount)+"pin-ddseries"
             else:
-                newboard["hardware"]["millistimer"] = 'B2'
+                newboard["build"]["variant"] = str(board_pincount)+"pin-standard"
 
-            newboard["build"]["variant"] = str(board_pincount)+"pin-standard"
             newboard["name"] = boardinfo.group(1).upper()
             newboard["upload"]["maximum_ram_size"] = board_ramsize * 128
             newboard["upload"]["maximum_size"] = board_ramsize * 1024
@@ -147,11 +148,11 @@ for series in ['D', 'E']:
 
             if boardinfo.group(3) == 'dd':
                 if board_pincount == 14:
-                    newboard["bootloader"]["class"] = f"optiboot_{btld_ramsize}dd14"
+                    newboard["bootloader"]["class"] = f"optiboot_dd{btld_ramsize}"
                 else:
-                    newboard["bootloader"]["class"] = f"optiboot_{btld_ramsize}dd"
+                    newboard["bootloader"]["class"] = f"optiboot_dd{btld_ramsize}"
             else:
-                newboard["bootloader"]["class"] = f"optiboot_{btld_ramsize}dx"
+                newboard["bootloader"]["class"] = f"optiboot_dx{btld_ramsize}"
 
             if not (PlatformioPath / "boards").exists():
                 (PlatformioPath / "boards").mkdir()
