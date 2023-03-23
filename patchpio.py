@@ -148,11 +148,11 @@ for series in ['D', 'E']:
 
             if boardinfo.group(3) == 'dd':
                 if board_pincount == 14:
-                    newboard["bootloader"]["class"] = f"optiboot_dd{btld_ramsize}"
+                    newboard["bootloader"]["class"] = f"optiboot_{btld_ramsize}dd14"
                 else:
-                    newboard["bootloader"]["class"] = f"optiboot_dd{btld_ramsize}"
+                    newboard["bootloader"]["class"] = f"optiboot_{btld_ramsize}dd"
             else:
-                newboard["bootloader"]["class"] = f"optiboot_dx{btld_ramsize}"
+                newboard["bootloader"]["class"] = f"optiboot_{btld_ramsize}dx"
 
             if not (PlatformioPath / "boards").exists():
                 (PlatformioPath / "boards").mkdir()
