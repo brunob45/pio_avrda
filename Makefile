@@ -1,5 +1,3 @@
-files = patchpio.py
-
-format: $(files)
-	isort --profile black ./
-	black ./
+format: $(wildcard *.py)
+	isort --profile black $?
+	black $?

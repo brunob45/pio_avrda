@@ -31,29 +31,9 @@ def find_file(dir: Path, match):
     return result
 
 
-# find platformio installation path
-if "USERPROFILE" in os.environ:  # windows
-    PlatformioPath = Path(os.environ["USERPROFILE"]) / ".platformio"
-elif "HOME" in os.environ:  # linux
-    PlatformioPath = Path(os.environ["HOME"]) / ".platformio"
-else:
-    PlatformioPath = Path(os.curdir)
-
-if not PlatformioPath.exists():
-    print("Cannot find Platformio at", PlatformioPath)
-    exit(1)
-else:
-    print("Found Platformio at", PlatformioPath)
-
-# find atmelavr toolchain
-ToolchainPath = PlatformioPath / "packages/toolchain-atmelavr"
-if not ToolchainPath.exists():
-    pkg_install = os.system("pio pkg install -g --tool toolchain-atmelavr")
-    if pkg_install != 0:
-        print("Cannot find atmelavr toolchain at", ToolchainPath)
-        exit(2)
-else:
-    print("Found toolchain at", ToolchainPath)
+# load template for board definition
+with open("board.json") as fp:
+    boardtemplate = json.load(fp)
 
 # get pack list from atmel's website
 print("Retrieving packs information...")
@@ -96,26 +76,58 @@ for series in ["D", "E"]:
 
     filefilter = str(AvrDaToolkitPath) + r"/(gcc|include)/.*(/specs-.*|\d+\.[aoh]$)"
 
-    if not (PlatformioPath / "boards").exists():
-        (PlatformioPath / "boards").mkdir()
+    if not Path("boards").exists():
+        Path("boards").mkdir()
 
     # find all header, linker and specs files needed for compilation
     for f in find_file(AvrDaToolkitPath, filefilter):
-        if re.search(r".*\.h$", str(f)):  # is header file
-            mynewdir = ToolchainPath / "avr/include/avr"
-        elif re.search(r".*\.[ao]$", str(f)):  # is linker file
-            mynewdir = ToolchainPath / "avr/lib" / str(f).split(os.sep)[-2]
-        else:  # is specs file
-            mynewdir = ToolchainPath / "lib/gcc/avr/"
-            mynewdir /= os.listdir(mynewdir)[0]
-            mynewdir /= "device-specs"
+        boardinfo = re.match(r"^io(avr(\d+)(\w\w)(\d+))$", f.stem)
+        if boardinfo:
+            # create board definition file
+            newboard = deepcopy(boardtemplate)
+            newboard["build"]["mcu"] = boardinfo.group(1)
+            board_ramsize = int(boardinfo.group(2))
+            board_pincount = int(boardinfo.group(4))
+            btld_ramsize = max(board_ramsize, 32)
 
-        # copy file
-        copyfile(f, mynewdir / f.name)
+            newboard["build"]["extra_flags"] = (
+                "-DARDUINO_AVR_"
+                + boardinfo.group(1).upper()
+                + " -DARDUINO_avr"
+                + boardinfo.group(3)
+            )
 
-        # remove administrator rights from file
-        os.chmod(mynewdir / f.name, 420)  # 644 in octal
+            del newboard["hardware"]["millistimer"]
+            # if boardinfo.group(3) == 'dd' and board_pincount <= 20:
+            #     newboard["hardware"]["millistimer"] = 'B1'
+            # else:
+            #     newboard["hardware"]["millistimer"] = 'B2'
 
-        print_verbose(f, "->", mynewdir)
+            if boardinfo.group(3) == "dd":
+                newboard["build"]["variant"] = str(board_pincount) + "pin-ddseries"
+            else:
+                newboard["build"]["variant"] = str(board_pincount) + "pin-standard"
+
+            newboard["name"] = boardinfo.group(1).upper()
+            newboard["upload"]["maximum_ram_size"] = board_ramsize * 128
+            newboard["upload"]["maximum_size"] = board_ramsize * 1024
+            newboard["url"] = (
+                "https://www.microchip.com/wwwproducts/en/" + boardinfo.group(1).upper()
+            )
+
+            if boardinfo.group(3) == "dd":
+                if board_pincount == 14:
+                    newboard["bootloader"]["class"] = f"optiboot_{btld_ramsize}dd14"
+                else:
+                    newboard["bootloader"]["class"] = f"optiboot_{btld_ramsize}dd"
+            else:
+                newboard["bootloader"]["class"] = f"optiboot_{btld_ramsize}dx"
+
+            newboardfile = os.path.join("boards", boardinfo.group(1).upper() + ".json")
+            with open(newboardfile, "w+") as fp:
+                fp.write(json.dumps(newboard, indent=2))
+                fp.write("\n")
+
+            print_verbose("Board definition file created ->", newboardfile)
 
 print("Success!")
